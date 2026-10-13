@@ -559,6 +559,24 @@ test("a completed write reports UTF-8 bytes and keeps metadata after abort", asy
 		assert.equal(await readFile(path, "utf8"), "你好");
 		assert.equal(store.get("completed")?.previousContent, "before");
 		assert.match(result.content[0]?.text ?? "", /6 bytes/);
+		assert.equal(abortReads, 3);
+
+		const empty = await executeWriteWithMetadata(
+			store,
+			"empty",
+			{ path, content: "" },
+			undefined,
+			directory,
+		);
+		const ascii = await executeWriteWithMetadata(
+			store,
+			"ascii",
+			{ path, content: "ab" },
+			undefined,
+			directory,
+		);
+		assert.match(empty.content[0]?.text ?? "", /0 bytes/);
+		assert.match(ascii.content[0]?.text ?? "", /2 bytes/);
 	} finally {
 		await rm(directory, { recursive: true, force: true });
 	}
