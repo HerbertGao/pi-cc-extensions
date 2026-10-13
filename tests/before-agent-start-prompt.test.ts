@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import test from "node:test";
+import test, { mock } from "node:test";
+import { SessionManager } from "@earendil-works/pi-coding-agent";
 import agentAutocompleteExtension from "../extensions/feature/reference/subagent.ts";
 import sessionReferenceExtension from "../extensions/feature/reference/index.ts";
 
@@ -46,7 +47,9 @@ test("a prompt without messageType still injects subagent references", async () 
 	}
 });
 
-test("a prompt without messageType still resolves session references", async () => {
+test("a prompt without messageType still resolves session references", async (t) => {
+	const listAll = mock.method(SessionManager, "listAll", async () => []);
+	t.after(() => listAll.mock.restore());
 	const events = install(sessionReferenceExtension);
 	const notices: string[] = [];
 	const result = await events.get("before_agent_start")?.(
@@ -56,6 +59,7 @@ test("a prompt without messageType still resolves session references", async () 
 			ui: { notify: (message: string) => notices.push(message) },
 		},
 	);
+	assert.equal(listAll.mock.calls.length, 1);
 	assert.equal(result, undefined);
 	assert.ok(notices.some((message) => message.includes("not found")));
 });
